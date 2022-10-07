@@ -1,5 +1,6 @@
-//#pragma once
+#pragma once
 #include <iostream>
+#include <cmath>
 //#include "point_t.h"
 #include "plate_t.h"
 
@@ -23,13 +24,8 @@ public:
     enum tr_type {
         POINT, LINE, TRI, NOT_DEF
     };
-    enum inters_type {
-        PT_PT, PT_LINE, PT_TRI, LINE_LINE, LINE_TRI, TRI_TRI, NOT_DEF_PAIR
-    };
 
     tr_type type_;
-
-    
 
     triangle_t() : type_{NOT_DEF} {}
     triangle_t(const point_t &pt1, const point_t &pt2, const point_t &pt3) 
@@ -39,18 +35,19 @@ public:
     bool isLine() const;
     bool isPt() const;
     bool isValid() const;
-    //bool pt_linesegm_inters(const point_t &pt1, const point_t &pt2, const point_t &pt3) const;
 
-    inters_type find_cases (const triangle_t &trian2) const;
+    bool all_intersection(const triangle_t &trian2) const;
     bool pt_pt_inters(const triangle_t &trian2) const;
     bool pt_line_inters(const triangle_t &trian2) const;
-    bool pt_tri_inters(const triangle_t &trian2);
+    bool pt_tri_inters(const triangle_t &trian2) const;
     bool line_line_inters(const triangle_t &trian2) const;
     bool line_tri_inters(const triangle_t &trian2) const;
     bool tri_tri_inters(const triangle_t &trian2) const;
 
-    bool SameSide(const point_t &p1, const point_t &p2, const point_t &a, const point_t &b);
-    bool PointInTriangle(const point_t &p, const point_t &a, const point_t &b, const point_t &c);
+    bool SameSide(const point_t &p1, const point_t &p2, const point_t &a, const point_t &b) const;
+    bool PointInTriangle(const point_t &p, const point_t &a, const point_t &b, const point_t &c) const;
+    bool linesegm_inters(const point_t &tmp_pt1, const point_t &tmp_pt2, const point_t &tmp_pt3, const point_t &tmp_pt4) const;
+    bool linesegm_tri_inters(const point_t &A, const point_t &B, const point_t &C, const point_t &X, const point_t &Y) const;
 }; 
 
 void triangle_t::define_type()
@@ -93,46 +90,27 @@ bool triangle_t::isValid() const
     return 0;
 }
 
-/*
-bool triangle_t::pt_linesegm_inters(const triangle_t &trian2) const 
-{
-    if ( ( (pt2.x_ - pt1.x_) / (pt2.x_ - pt3.x_) - (pt2.y_ - pt1.y_) / (pt2.y_ - pt3.y_) ) < eps &&
-        ( (pt2.x_ - pt1.x_) / (pt2.x_ - pt3.x_) - (pt2.z_ - pt1.z_) / (pt2.z_ - pt3.z_) ) < eps) {
-        if ( (pt2.x_ - pt3.x_) < eps) {
-            if ()
-        }
-        else  {
-            ( (pt2.x_ - pt1.x_) * 
-        
-        }
-    }
-
-
-}*/
-
-triangle_t::inters_type triangle_t::find_cases(const triangle_t &trian2) const
+bool triangle_t::all_intersection(const triangle_t &trian2) const
 {
     if (type_ == POINT && trian2.type_ == POINT)
-        return PT_PT;
+        return pt_pt_inters(trian2);
 
     if ((type_ == POINT && trian2.type_ == LINE) || (type_ == LINE && trian2.type_ == POINT))
-        return PT_LINE;
+        return pt_line_inters(trian2);
 
     if ((type_ == POINT && trian2.type_ == TRI) || (type_ == TRI && trian2.type_ == POINT))
-        return PT_TRI;
+        return pt_tri_inters(trian2);
 
     if (type_ == LINE && trian2.type_ == LINE)
-        return LINE_LINE;
+        return line_line_inters(trian2);
 
     if ((type_ == LINE && trian2.type_ == TRI) || (type_ == TRI && trian2.type_ == LINE))
-        return LINE_TRI;
+        return line_tri_inters(trian2);
 
     if (type_ == TRI && trian2.type_ == TRI)
-        return TRI_TRI;
+        return tri_tri_inters(trian2);
 
-    else {
-        return NOT_DEF_PAIR;
-    }
+    return 0;
 }
 
 bool triangle_t::pt_pt_inters(const triangle_t &trian2) const
@@ -164,19 +142,19 @@ bool triangle_t::pt_line_inters(const triangle_t &trian2) const
     
 }
 
-bool triangle_t::pt_tri_inters(const triangle_t &trian2)
+bool triangle_t::pt_tri_inters(const triangle_t &trian2) const
 {
     if (type_ == POINT) {
         plate_t tri_plate{trian2.pt1_, trian2.pt2_, trian2.pt3_};
 
-        if (std::abs(tri_plate.distance(pt1_)) < eps) {
+        if (fabs(tri_plate.distance(pt1_)) < eps) {
             return PointInTriangle(pt1_, trian2.pt1_, trian2.pt2_, trian2.pt3_);
         }
     }
     else {
         plate_t tri_plate{pt1_, pt2_, pt3_};
 
-        if (std::abs(tri_plate.distance(trian2.pt1_)) < eps) {
+        if (fabs(tri_plate.distance(trian2.pt1_)) < eps) {
             return PointInTriangle(trian2.pt1_, pt1_, pt2_, pt3_);
         }
     }
@@ -186,31 +164,88 @@ bool triangle_t::pt_tri_inters(const triangle_t &trian2)
 
 bool triangle_t::line_line_inters(const triangle_t &trian2) const
 {
-
+    if (trian2.pt1_ == trian2.pt2_) {
+        plate_t tmp_plate {trian2.pt1_, trian2.pt3_, pt1_};
+        if (pt1_ == pt2_) {
+            if (fabs(tmp_plate.distance(pt3_)) < eps) {
+                return linesegm_inters(pt1_, pt3_, trian2.pt1_, trian2.pt3_);
+            }
+        }
+        else {
+            if (fabs(tmp_plate.distance(pt2_)) < eps) {
+                return linesegm_inters(pt1_, pt2_, trian2.pt1_, trian2.pt3_);
+            }
+        }
+    }
+    else {
+        plate_t tmp_plate {trian2.pt1_, trian2.pt2_, pt1_};
+        if (pt1_ == pt2_) {
+            if (fabs(tmp_plate.distance(pt3_)) < eps) {
+                return linesegm_inters(pt1_, pt3_, trian2.pt1_, trian2.pt2_);
+            }
+        }
+        else {
+            if (fabs(tmp_plate.distance(pt3_)) < eps) {
+                return linesegm_inters(pt1_, pt2_, trian2.pt1_, trian2.pt2_);
+            }
+        }
+    }
+    return 0;
 }
 
 bool triangle_t::line_tri_inters(const triangle_t &trian2) const
 {
-
+    if (type_ == LINE) {
+        if (pt1_ == pt2_) {
+            return linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt1_, pt3_); 
+        }
+        else {
+            return linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt1_, pt2_); 
+        }
+    }   
+    else {
+        if (trian2.pt1_ == trian2.pt2_) {
+            return linesegm_tri_inters(trian2.pt1_, trian2.pt3_, trian2.pt3_, pt1_, pt3_); 
+        }
+        else {
+            return linesegm_tri_inters(trian2.pt1_, trian2.pt3_, trian2.pt3_, pt1_, pt2_); 
+        }
+    }
 }
 
 bool triangle_t::tri_tri_inters(const triangle_t &trian2) const
 {   
-    /*type tr1_type = tr_type;
-    type tr2_type = tr2.tr_type;
-    
-    switch (tr1_type) {
-        case POINT:
-        case LINE:
-        case TRI:
-        case NOT_DEF:
-
-    };
-*/
+    if (linesegm_tri_inters(pt1_, pt2_, pt3_, trian2.pt1_, trian2.pt2_)        || 
+        linesegm_tri_inters(pt1_, pt2_, pt3_, trian2.pt1_, trian2.pt3_)        || 
+        linesegm_tri_inters(pt1_, pt2_, pt3_, trian2.pt3_, trian2.pt2_)        || 
+        linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt1_, pt2_) || 
+        linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt1_, pt3_) || 
+        linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt3_, pt2_)) 
+        return 1;
+    /*
+    if (linesegm_tri_inters(pt1_, pt2_, pt3_, trian2.pt1_, trian2.pt2_)) {
+        return 1;
+    } 
+    if (linesegm_tri_inters(pt1_, pt2_, pt3_, trian2.pt1_, trian2.pt3_)) {
+        return 1;
+    }    
+    if (linesegm_tri_inters(pt1_, pt2_, pt3_, trian2.pt3_, trian2.pt2_)) {
+        return 1;
+    } 
+    if (linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt1_, pt2_)) {
+        return 1;
+    } 
+    if (linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt1_, pt3_)) {
+        return 1;
+    } 
+    if (linesegm_tri_inters(trian2.pt1_, trian2.pt2_, trian2.pt3_, pt3_, pt2_)) {
+        return 1;
+    }   
+    */
     return 0;
 }
 
-bool triangle_t::SameSide(const point_t &p1, const point_t &p2, const point_t &a, const point_t &b)
+bool triangle_t::SameSide(const point_t &p1, const point_t &p2, const point_t &a, const point_t &b) const
 {
     vector_t vec_ab = b.make_vector() - a.make_vector();
     vector_t vec_p1a = p1.make_vector() - a.make_vector();
@@ -224,12 +259,105 @@ bool triangle_t::SameSide(const point_t &p1, const point_t &p2, const point_t &a
     return 0;
 }
 
-bool triangle_t::PointInTriangle(const point_t &p, const point_t &a, const point_t &b, const point_t &c)
+bool triangle_t::PointInTriangle(const point_t &p, const point_t &a, const point_t &b, const point_t &c) const
 {
     if (SameSide(p, a, b, c) && SameSide(p, b, a, c) && SameSide(p, c, a, b))
         return 1;
     
     return 0;
 }
+
+bool triangle_t::linesegm_inters(const point_t &tmp_pt1, const point_t &tmp_pt2, const point_t &tmp_pt3, const point_t &tmp_pt4) const
+{
+    
+    vector_t da = tmp_pt2.make_vector() - tmp_pt1.make_vector(); 
+    vector_t db = tmp_pt4.make_vector() - tmp_pt3.make_vector();
+    vector_t dc = tmp_pt3.make_vector() - tmp_pt1.make_vector();
+
+    if ((da.vector_mul(db)).length() < eps) { // parallel
+        line_t line12{da, tmp_pt1};
+        if (line12.onLine(tmp_pt3)) {
+            vector_t d13 = tmp_pt3.make_vector() - tmp_pt1.make_vector(); 
+            vector_t d14 = tmp_pt4.make_vector() - tmp_pt1.make_vector();
+            vector_t d23 = tmp_pt3.make_vector() - tmp_pt2.make_vector(); 
+            vector_t d24 = tmp_pt4.make_vector() - tmp_pt2.make_vector();
+            if (d13.length() < eps || d14.length() < eps || 
+            d23.length() < eps || d24.length() < eps) {
+                return 1;
+            }
+            if (d13.skalar_mul(d14) > 0 && d23.skalar_mul(d24) > 0 && d13.skalar_mul(d23) > 0 && d13.skalar_mul(d14) > 0) {
+                return 0;
+            }
+        }
+        return 0;
+    }
+
+    if (fabs(dc.skalar_mul(da.vector_mul(db))) > eps) // lines are not coplanar
+        return 0;
+
+    vector_t d1 = dc.vector_mul(db);
+    vector_t d2 = da.vector_mul(db);
+    vector_t d3 = dc.vector_mul(da);
+    
+    double d1d2 = d1.skalar_mul(d2);
+ 
+    double s = (dc.vector_mul(db)).skalar_mul(da.vector_mul(db)) / (da.skalar_mul(db) * da.skalar_mul(db));
+
+    double t = (dc.vector_mul(da)).skalar_mul(da.vector_mul(db)) / (da.skalar_mul(db) * da.skalar_mul(db));
+
+    if (s >= 0.0 && s <= 1.0 && t >= 0.0 && t <= 1.0) {
+        return 1;
+    }
+
+    return 0;
+}
+
+bool triangle_t::linesegm_tri_inters(const point_t &A, const point_t &B, const point_t &C, const point_t &X, const point_t &Y) const
+{
+    
+    vector_t AB = B.make_vector() - A.make_vector();
+    vector_t AC = C.make_vector() - A.make_vector();
+    vector_t N =  AB.vector_mul(AC);
+    N.normalize();
+    vector_t W = Y.make_vector() - X.make_vector();
+    
+    if (N.skalar_mul(W) < eps) {
+        plate_t tmp_tri_plate{A, B, C};
+
+        if (tmp_tri_plate.distance(X) > eps)
+            return 0;
+
+        if (linesegm_inters(X, Y, A, B) || linesegm_inters(X, Y, A, C) || linesegm_inters(X, Y, C, B))
+            return 1;
+    }
+
+    vector_t V = A.make_vector() - X.make_vector();
+    
+    double d =  N.skalar_mul(V);
+    
+    
+    double e =  N.skalar_mul(W);
+    
+    if (fabs(e) < eps) {
+        base_point baseX = X.make_bs_pt();
+        base_point baseY = Y.make_bs_pt();
+        base_point baseW = W.make_bs_vec();
+        
+        point_t inters_pt{baseX.x  +  baseW.x * d/e, baseX.y  +  baseW.y * d/e, baseX.z  +  baseW.z * d/e};
+
+        if (PointInTriangle(inters_pt, A, B, C)) {
+            vector_t OX = X.make_vector() - inters_pt.make_vector();
+            vector_t OY = Y.make_vector() - inters_pt.make_vector();
+            if (OX.length() < eps || OY.length() < eps || OX.skalar_mul(OY) < 0) {
+                return 1;
+            }
+        }
+
+        return 0;
+    }
+    return 0;
+}
+
+
 
 };

@@ -1,7 +1,8 @@
 #pragma once
 #include <iostream>
 #include <math.h>
-#include "triangle.h"
+
+#include "vector_t.h"
 
 namespace triangles {
 
@@ -20,10 +21,10 @@ public:
     base_point get_coordinate() const;
     bool pt_linesegm_inters(const point_t &pt2, const point_t &pt3) const;
     bool isEq(const point_t &pt2) const;
-    vector_t make_vector() const;    
+    vector_t make_vector() const; 
+    base_point make_bs_pt() const;    
     bool isValid() const;
 
-    point_t operator = (const point_t &pt2);
     bool operator == (const point_t &pt2) const;
 };
 
@@ -59,6 +60,11 @@ bool point_t::isEq(const point_t &pt2) const
     return x_ == pt2.x_ && y_ == pt2.y_ && z_ == pt2.z_;
 }
 
+base_point point_t::make_bs_pt() const
+{
+    return base_point{x_, y_, z_};
+}
+
 vector_t point_t::make_vector() const
 {
     return vector_t{x_, y_, z_};
@@ -71,20 +77,11 @@ bool point_t::isValid() const
     return 0;
 }
 
-point_t point_t::operator = (const point_t &pt2) 
-{
-    x_ = pt2.x_;
-    y_ = pt2.y_;
-    z_ = pt2.z_;
-
-    return *this;
-}
-
 bool point_t::operator == (const point_t &pt2) const
 {
-    return ((x_ - pt2.x_) < eps) && ((y_ - pt2.y_) < eps) && ((z_ - pt2.z_) < eps);
+    return (fabs(x_ - pt2.x_) < eps) && (fabs(y_ - pt2.y_) < eps) && (fabs(z_ - pt2.z_) < eps);
 }
 
 };  //  namespace triangles
 
-#include "vector_t.h"
+//#include "vector_t.h"

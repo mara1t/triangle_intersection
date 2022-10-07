@@ -1,7 +1,7 @@
 #pragma once
 #include <cmath>
-
-#include "point_t.h"
+#include <cassert>
+#include "triangle.h"
 
 namespace triangles {
 
@@ -24,6 +24,8 @@ public:
     double skalar_mul(const vector_t &vec2) const;
     vector_t vector_mul(const vector_t &vec2) const;
     double length() const;
+    void normalize();
+    base_point make_bs_vec() const;
 
     vector_t operator + (const vector_t &v2) const;
     vector_t operator - (const vector_t &v2) const;
@@ -59,6 +61,20 @@ vector_t vector_t::vector_mul(const vector_t &vec) const
 double vector_t::length() const
 {   
     return sqrt(x_ * x_ + y_ * y_ + z_ * z_);
+}
+
+void vector_t::normalize()
+{
+    double len = length();
+    assert(len > eps);
+    x_ /= len;
+    y_ /= len;
+    z_ /= len;
+}
+
+base_point vector_t::make_bs_vec() const
+{
+    return base_point{x_, y_, z_};
 }
 
 vector_t vector_t::operator + (const vector_t &v2) const
