@@ -35,6 +35,7 @@ public:
     bool isLine() const;
     bool isPt() const;
     bool isValid() const;
+    bool isBetweenPts(const point_t& X, const point_t& A, const point_t& B) const;
 
     bool all_intersection(const triangle_t &trian2) const;
     bool pt_pt_inters(const triangle_t &trian2) const;
@@ -80,6 +81,22 @@ bool triangle_t::isPt() const
         return 1;
     
     return 0;
+}
+
+//there goes 3 pts laying on one line
+bool triangle_t::isBetweenPts(const point_t& X, const point_t& A, const point_t& B) const 
+{
+    line_t tmp_line{A, B};
+    if (!tmp_line.onLine(X))
+        return 0;
+
+    vector_t XA = A.make_vector() - X.make_vector();
+    vector_t XB = B.make_vector() - X.make_vector();
+    if (XA.skalar_mul(XB) < 0) 
+        return 1;
+    
+    return 0;
+
 }
 
 bool triangle_t::isValid() const
@@ -164,7 +181,11 @@ bool triangle_t::pt_tri_inters(const triangle_t &trian2) const
 
 bool triangle_t::line_line_inters(const triangle_t &trian2) const
 {
-    if (trian2.pt1_ == trian2.pt2_) {
+    if (isBetweenPts(trian2.pt3_, trian2.pt1_, trian2.pt2_)) {
+        line_t tmp_line{trian2.pt1_, trian2.pt2_};
+        if (tmp_line.onLine(pt1_)) 
+            return 1;
+        
         plate_t tmp_plate {trian2.pt1_, trian2.pt3_, pt1_};
         if (pt1_ == pt2_) {
             if (fabs(tmp_plate.distance(pt3_)) < eps) {
@@ -318,6 +339,9 @@ bool triangle_t::linesegm_tri_inters(const point_t &A, const point_t &B, const p
     vector_t AB = B.make_vector() - A.make_vector();
     vector_t AC = C.make_vector() - A.make_vector();
     vector_t N =  AB.vector_mul(AC);
+    /*if (N.length() < eps) {
+
+    }*/
     N.normalize();
     vector_t W = Y.make_vector() - X.make_vector();
     

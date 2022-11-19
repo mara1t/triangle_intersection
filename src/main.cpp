@@ -16,11 +16,11 @@ triangles::point_t get_pt()
     return tmp_pt;
 }
 
-int triag_inters(const int n) {
+int triag_inters(const unsigned int n) {
     std::list<std::pair<triangles::triangle_t, int>> notcrossing_tr;
     std::vector<std::pair<triangles::triangle_t, int>> crossing_tr;
 
-    for (int id = 0; id < n; id++) {
+    for (unsigned int id = 0; id < n; id++) {
         triangles::point_t pt1 = get_pt();
         triangles::point_t pt2 = get_pt();
         triangles::point_t pt3 = get_pt();
@@ -68,7 +68,8 @@ int triag_inters(const int n) {
 }
 
 int main()
-{
-    triag_inters(2);
+{   unsigned int n;
+    std::cin >> n;
+    triag_inters(n);
     return 0;
 }
